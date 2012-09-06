@@ -99,15 +99,8 @@ func SentencesAround(sources []string, keywords []string, hf highlightFunc) (r [
 				r = append(r, rc.tostring())
 				rc = resultChunk{}
 			}
-
-			highlighted := false
-			for _, keyword := range keywords {
-				var yes bool
-				hs, yes = Highlight(hs, keyword, hf)
-				if yes {
-					highlighted = true
-				}
-			}
+			var highlighted bool
+			hs, highlighted = Highlight(hs, keywords, hf)
 
 			// is highlighted or has highlighted before, but the sentence is shorter then 16 charactor.
 			if highlighted || (len(rc.lines) > 0 && len(hs) < 16) {
@@ -127,10 +120,22 @@ func SentencesAround(sources []string, keywords []string, hf highlightFunc) (r [
 	return
 }
 
-func Highlight(sentence, keyword string, hf highlightFunc) (r string, highlighted bool) {
-	downcaseSentence := strings.ToLower(sentence)
+func Highlight(source string, keywords []string, hf highlightFunc) (r string, highlighted bool) {
+	r = source
+	for _, keyword := range keywords {
+		var yes bool
+		r, yes = highlightOne(r, keyword, hf)
+		if yes {
+			highlighted = true
+		}
+	}
+	return
+}
+
+func highlightOne(source, keyword string, hf highlightFunc) (r string, highlighted bool) {
+	downcaseSentence := strings.ToLower(source)
 	left := downcaseSentence
-	sentenceLeft := sentence
+	sentenceLeft := source
 	for {
 		i := strings.Index(left, keyword)
 		if i < 0 {
