@@ -3,12 +3,61 @@ package excerpt
 import (
 	"strings"
 	// "fmt"
+	"unicode"
 )
 
 type highlightFunc func(word string) string
 
 func sentencesStop(w rune) (r bool) {
 	r = (strings.Index(",，.。?？!！#\n", string(w)) >= 0)
+	return
+}
+
+type sentenceScanner struct {
+	src     []rune
+	length  int
+	start   int
+	pos     int
+	stopped bool
+}
+
+func newScanner(src string) (r *sentenceScanner) {
+	r = new(sentenceScanner)
+	r.src = []rune(src)
+	r.length = len(r.src)
+	r.pos = -1
+	return
+}
+
+func (ss *sentenceScanner) next() (r string, finished bool) {
+	for {
+		ss.pos = ss.pos + 1
+
+		if ss.pos > ss.length {
+			finished = true
+			return
+		}
+
+		if ss.pos == ss.length {
+			r = string(ss.src[ss.start:ss.pos])
+			return
+		}
+		// fmt.Println("pos: ", string(ss.src))
+		// fmt.Println("pos: ", ss.pos)
+		// fmt.Println("length: ", ss.length)
+		current := ss.src[ss.pos]
+		if ss.stopped && !unicode.IsSpace(current) {
+			r = string(ss.src[ss.start:ss.pos])
+			ss.start = ss.pos
+			ss.stopped = false
+			return
+		}
+
+		if sentencesStop(current) {
+			ss.stopped = true
+		}
+
+	}
 	return
 }
 
@@ -27,24 +76,30 @@ func (rc resultChunk) tostring() (r string) {
 	if rc.after != "" {
 		rs = append(rs, rc.after)
 	}
-	r = strings.Join(rs, ", ")
+	r = strings.Join(rs, "")
 	return
 }
 
 // Find the highlights sentences in each chunk of sources, and highlight the sentence and find the previous and next sentence around it, all connected highlighted sentences are merged into one
 func SentencesAround(sources []string, keywords []string, hf highlightFunc) (r []string) {
 	for _, chunk := range sources {
-		sentences := strings.FieldsFunc(chunk, sentencesStop)
+		ss := newScanner(chunk)
 
 		rc := resultChunk{}
 
-		for _, s := range sentences {
+		for {
+			s, finished := ss.next()
+			if finished {
+				break
+			}
+
+			hs := s
+
 			if rc.after != "" {
 				r = append(r, rc.tostring())
 				rc = resultChunk{}
 			}
 
-			hs := strings.TrimSpace(s)
 			highlighted := false
 			for _, keyword := range keywords {
 				var yes bool
@@ -54,7 +109,8 @@ func SentencesAround(sources []string, keywords []string, hf highlightFunc) (r [
 				}
 			}
 
-			if highlighted {
+			// is highlighted or has highlighted before, but the sentence is shorter then 16 charactor.
+			if highlighted || (len(rc.lines) > 0 && len(hs) < 16) {
 				rc.lines = append(rc.lines, hs)
 			} else {
 				if len(rc.lines) > 0 {
