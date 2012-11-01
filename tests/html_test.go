@@ -3,6 +3,7 @@ package tests
 import (
 	"github.com/sunfmin/excerpt"
 	"testing"
+	"strings"
 )
 
 func TestHighlightHtml(t *testing.T) {
@@ -46,9 +47,16 @@ func TestHighlightHtml(t *testing.T) {
 
 `
 
-excerpt.HighlightHtml(h, []string{"github"}, highlight)
-
-
+	r, _, err := excerpt.HighlightHtml(h, []string{"github"}, highlight)
+	if err != nil {
+		t.Error(err)
+	}
+	if strings.Index(r, "http://developer.github.com/v3/issues/") < 0 {
+		t.Error(r)
+	}
+	if strings.Index(r, "might integrate *GitHub*") < 0 {
+		t.Error(r)
+	}
 
 
 }

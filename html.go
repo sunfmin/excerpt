@@ -3,31 +3,32 @@ package excerpt
 import (
 	"github.com/sunfmin/exphtml"
 	"strings"
-	"fmt"
 	"io"
+	"bytes"
 )
 
-func HighlightHtml(source string, keywords []string, hf highlightFunc) (r string, highlighted bool) {
+func HighlightHtml(source string, keywords []string, hf highlightFunc) (r string, highlighted bool, err error) {
 	z := exphtml.NewTokenizer(strings.NewReader(source))
+	buf := bytes.NewBuffer(nil)
 	for {
 		tt := z.Next()
-
-		fmt.Println("RAW: ", string(z.Raw()))
 
 		switch tt {
 		case exphtml.ErrorToken:
 			if z.Err() != io.EOF {
-				fmt.Println(z.Err())
+				err = z.Err()
+				return
 			}
 			goto exit
 		case exphtml.TextToken:
-			fmt.Println("TEXT: ", string(z.Text()))
+			htext, _ := Highlight(string(z.Text()), keywords, hf)
+			buf.WriteString(htext)
 		case exphtml.StartTagToken, exphtml.EndTagToken:
-			tn, _ := z.TagName()
-			fmt.Println(string(tn))
+			buf.Write(z.Raw())
 		}
 	}
 exit:
+	r = buf.String()
 	return
 }
 
