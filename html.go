@@ -1,13 +1,17 @@
 package excerpt
 
 import (
-	"github.com/sunfmin/exphtml"
-	"strings"
-	"io"
 	"bytes"
+	"github.com/sunfmin/exphtml"
+	"io"
+	"strings"
 )
 
 func HighlightHtml(source string, keywords []string, hf highlightFunc) (r string, highlighted bool, err error) {
+	r = source
+	if len(keywords) == 0 {
+		return
+	}
 	z := exphtml.NewTokenizer(strings.NewReader(source))
 	buf := bytes.NewBuffer(nil)
 	for {
@@ -31,4 +35,3 @@ exit:
 	r = buf.String()
 	return
 }
-
