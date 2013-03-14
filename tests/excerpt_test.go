@@ -54,6 +54,18 @@ Are you still going to use the cutout logo somewhere near the entrance of the of
 		highlight,
 	},
 	{
+		[]string{`杭州大浪软件技术有限公司，位于杭州西湖区`},
+		[]string{"大浪", "大浪软件技术", "技术有限"},
+		[]string{`杭州*大浪软件技术有限*公司，位于杭州西湖区`},
+		highlight,
+	},
+	{
+		[]string{`杭州大浪软件技术有限公司，位于杭州西湖区`},
+		[]string{"大浪", "软件", "术"},
+		[]string{`杭州*大浪软件*技*术*有限公司，位于杭州西湖区`},
+		highlight,
+	},
+	{
 		[]string{`fsfds found a dsfsdfsd`},
 		[]string{"found", "a"},
 		[]string{`fsfds <span style="color: #ff6226">found</span> <span style="color: #ff6226">a</span> dsfsdfsd`},

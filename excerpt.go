@@ -1,8 +1,8 @@
 package excerpt
 
 import (
+	"fmt"
 	"strings"
-	// "fmt"
 	"unicode"
 )
 
@@ -121,34 +121,99 @@ func SentencesAround(sources []string, keywords []string, hf highlightFunc) (r [
 }
 
 func Highlight(source string, keywords []string, hf highlightFunc) (r string, highlighted bool) {
-	r = source
+	sol := &segOrderList{}
 	for _, keyword := range keywords {
-		var yes bool
-		r, yes = highlightOne(r, keyword, hf)
-		if yes {
-			highlighted = true
-		}
+		findMatchesPut(source, keyword, sol)
+	}
+
+	if len(sol.l) > 0 {
+		highlighted = true
+	}
+	last := 0
+	for _, s := range sol.l {
+		r = r + source[last:s.start]
+		r = r + hf(source[s.start:s.end])
+		last = s.end
+	}
+	r = r + source[last:]
+
+	return
+}
+
+type seg struct {
+	start int
+	end   int
+}
+
+func (x *seg) String() string {
+	return fmt.Sprintf("[%d, %d]", x.start, x.end)
+}
+
+func (x *seg) intersect(y *seg) bool {
+	if x.start > y.end {
+		return false
+	}
+	if x.end < y.start {
+		return false
+	}
+	return true
+}
+
+func (x *seg) smallerThan(y *seg) bool {
+	return x.end < y.start
+}
+
+func (x *seg) merge(y *seg) {
+	if x.start > y.start {
+		x.start = y.start
+	}
+	if x.end < y.end {
+		x.end = y.end
 	}
 	return
 }
 
-func highlightOne(source, keyword string, hf highlightFunc) (r string, highlighted bool) {
+type segOrderList struct {
+	l []*seg
+}
+
+func (sol *segOrderList) putInOrder(s *seg) {
+	p := -1
+	for i, s1 := range sol.l {
+		if s1.intersect(s) {
+			s1.merge(s)
+			return
+		}
+		if s.smallerThan(s1) {
+			p = i
+			break
+		}
+	}
+	if p == -1 {
+		sol.l = append(sol.l, s)
+	} else {
+		sol.l = append(sol.l[:p], append([]*seg{s}, sol.l[p:]...)...)
+	}
+	return
+}
+
+func findMatchesPut(source, keyword string, sol *segOrderList) {
 	downcaseSentence := strings.ToLower(source)
 	left := downcaseSentence
-	sentenceLeft := source
+	var offset int
 	for {
 		i := strings.Index(left, keyword)
 		if i < 0 {
 			break
 		}
-		wordTo := (i + len(keyword))
+		start := offset + i
+		end := (start + len(keyword))
 
-		r = r + sentenceLeft[:i] + hf(sentenceLeft[i:wordTo])
-		left = left[wordTo:]
+		s := &seg{start, end}
+		sol.putInOrder(s)
 
-		sentenceLeft = sentenceLeft[wordTo:]
-		highlighted = true
+		left = left[end:]
+		offset += end
 	}
-	r = r + sentenceLeft
 	return
 }
