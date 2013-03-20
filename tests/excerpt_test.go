@@ -73,6 +73,25 @@ Are you still going to use the cutout logo somewhere near the entrance of the of
 	},
 }
 
+var highlightCases = []Case{
+	{
+		[]string{`not found`},
+		[]string{"yes", "cant"},
+		[]string{`not found`},
+		highlightspan,
+	},
+	{
+		[]string{p1},
+		[]string{"entrance"},
+		[]string{
+			`We currently have only one sign at the outside of the building. I was just wondering where do you plan to put the sign in China. Are you going to put it at the *entrance* gate, or somewhere at the *entrance* of the building?
+
+Are you still going to use the cutout logo somewhere near the *entrance* of the office upstairs?`,
+		},
+		highlight,
+	},
+}
+
 func highlight(word string) (r string) {
 	r = "*" + word + "*"
 	return
@@ -81,6 +100,15 @@ func highlight(word string) (r string) {
 func highlightspan(word string) (r string) {
 	r = `<span style="color: #ff6226">` + word + `</span>`
 	return
+}
+
+func TestHighlight(t *testing.T) {
+	for _, c := range highlightCases {
+		r, _ := excerpt.Highlight(c.Source[0], c.Keywords, c.HighlightFunc)
+		if len(r) != len(c.Result[0]) {
+			t.Errorf("expected: \n%s \n\nbut was: \n%s\n\n\n", c.Result[0], r)
+		}
+	}
 }
 
 func TestSentencesAround(t *testing.T) {

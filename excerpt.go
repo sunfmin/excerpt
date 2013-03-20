@@ -126,9 +126,13 @@ func Highlight(source string, keywords []string, hf highlightFunc) (r string, hi
 		findMatchesPut(source, keyword, sol)
 	}
 
-	if len(sol.l) > 0 {
-		highlighted = true
+	if len(sol.l) == 0 {
+		r = source
+		return
 	}
+
+	highlighted = true
+
 	last := 0
 	for _, s := range sol.l {
 		r = r + source[last:s.start]
@@ -211,9 +215,10 @@ func findMatchesPut(source, keyword string, sol *segOrderList) {
 
 		s := &seg{start, end}
 		sol.putInOrder(s)
-
-		left = left[end:]
-		offset += end
+		// println("===end", end, "keyword: ", keyword, "left: ", left)
+		thisEnd := i + len(keyword)
+		left = left[thisEnd:]
+		offset += thisEnd
 	}
 	return
 }
